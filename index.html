@@ -125,6 +125,7 @@
     }
     button.danger {
       background: #d93025;
+      color: #fff;
     }
     button.danger:hover {
       background: #b31412;
@@ -211,11 +212,14 @@
           <button id="showWatchLaterBtn" type="button" class="secondary" style="padding: 6px 12px; font-size: 13px;">📌 あとで見る</button>
         </div>
 
-        <!-- 一覧モーダル風エリア -->
+        <!-- 履歴・あとで見るの一覧（すべてクリアボタン付き） -->
         <div id="saved-list-wrap" style="display: none; margin-bottom: 14px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <strong id="saved-list-title" style="font-size: 14px;">一覧</strong>
-            <button id="closeSavedList" type="button" class="secondary" style="padding: 4px 8px; font-size: 12px;">✕ 閉じる</button>
+            <div style="display: flex; gap: 6px;">
+              <button id="clearAllBtn" type="button" class="danger" style="padding: 4px 8px; font-size: 11px;">すべてクリア</button>
+              <button id="closeSavedList" type="button" class="secondary" style="padding: 4px 8px; font-size: 12px;">✕ 閉じる</button>
+            </div>
           </div>
           <div id="saved-list" style="display: grid; gap: 8px;"></div>
         </div>
@@ -460,7 +464,6 @@
             <button type="button" class="secondary watch-later-btn" style="padding:4px 8px; font-size:12px; cursor:pointer; flex-shrink:0;" title="あとで見るに追加">📌</button>
           `;
 
-          // クリックで再生＆履歴に追加
           card.querySelectorAll(".thumb-click").forEach(el => {
             el.addEventListener("click", () => {
               ytPlayerEl.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`;
@@ -470,7 +473,6 @@
             });
           });
 
-          // あとで見るに追加
           card.querySelector(".watch-later-btn").addEventListener("click", (e) => {
             e.stopPropagation();
             addToWatchLater(videoId, title);
@@ -522,37 +524,21 @@
       });
     }
 
-    // ── 履歴・あとで見るの一覧表示処理 ──
+    // ── 履歴・あとで見るの一覧表示＆削除処理 ──
     const savedWrap = document.getElementById('saved-list-wrap');
     const savedTitle = document.getElementById('saved-list-title');
     const savedListEl = document.getElementById('saved-list');
+    let currentKey = '';
 
     function renderSavedList(key, headingText) {
+      currentKey = key;
       const list = getSavedVideos(key);
       savedTitle.textContent = headingText;
       savedListEl.innerHTML = '';
+      
       if (list.length === 0) {
         savedListEl.innerHTML = '<p style="font-size:13px; color:var(--text-sub); margin:0;">まだ動画がありません。</p>';
       } else {
         list.forEach(item => {
           const row = document.createElement('div');
-          row.style.cssText = 'padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text-main);';
-          row.textContent = item.title;
-          row.addEventListener('click', () => {
-            ytPlayerEl.src = `https://www.youtube-nocookie.com/embed/${item.id}?autoplay=1`;
-            ytPlayerWrapEl.style.display = 'block';
-            ytPlayerWrapEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            addToHistory(item.id, item.title);
-          });
-          savedListEl.appendChild(row);
-        });
-      }
-      savedWrap.style.display = 'block';
-    }
-
-    document.getElementById('showHistoryBtn')?.addEventListener('click', () => renderSavedList('watch_history', '🕒 視聴履歴'));
-    document.getElementById('showWatchLaterBtn')?.addEventListener('click', () => renderSavedList('watch_later', '📌 あとで見る'));
-    document.getElementById('closeSavedList')?.addEventListener('click', () => { savedWrap.style.display = 'none'; });
-  </script>
-</body>
-</html>
+ 
