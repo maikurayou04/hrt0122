@@ -374,9 +374,29 @@ body.dark-mode {
 
       </div>
         <!-- YouTube検索＆再生カード -->
-        <div class="card">
-          <h2>YouTube 検索</h2>
-          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+<div class="card">
+  <h2>YouTube 検索</h2>
+
+
+      <!-- ★ここから追加：ダークモード・履歴・あとで見るボタン -->
+      <div style="margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+        <button id="themeToggle" type="button" class="secondary" style="padding: 6px 12px; font-size: 13px;">🌙 ダークモード</button>
+        <button id="showHistoryBtn" type="button" class="secondary" style="padding: 6px 12px; font-size: 13px;">🕒 履歴</button>
+        <button id="showWatchLaterBtn" type="button" class="secondary" style="padding: 6px 12px; font-size: 13px;">📌 あとで見る</button>
+      </div>
+
+      <!-- 履歴やあとで見るの一覧が出る場所 -->
+      <div id="saved-list-wrap" style="display: none; margin-bottom: 14px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <strong id="saved-list-title" style="font-size: 14px;">一覧</strong>
+          <button id="closeSavedList" type="button" class="secondary" style="padding: 4px 8px; font-size: 12px;">✕ 閉じる</button>
+        </div>
+        <div id="saved-list" style="display: grid; gap: 8px;"></div>
+      </div>
+      <!-- ★ここまで追加 -->
+
+      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+
             <input
               id="yt-query"
               type="text"
