@@ -15,24 +15,26 @@
   <style>
 
     :root {
+  --primary: #1967d2;
+  --primary-hover: #1557b0;
+  --bg-color: #f8f9fa;
+  --card-bg: #ffffff;
+  --text-main: #202124;
+  --text-sub: #5f6368;
+  --border-color: #dadce0;
+  --radius: 12px;
+} /* ←ここでいったん `:root` を閉じる */
 
-      --primary: #1967d2;
+/* ── ここにダークモードの色設定を置く ── */
+body.dark-mode {
+  --bg-color: #121212;
+  --card-bg: #1e1e1e;
+  --text-main: #f0f0f0;
+  --text-sub: #aaaabb;
+  --border-color: #333333;
+}
 
-      --primary-hover: #1557b0;
 
-      --bg-color: #f8f9fa;
-
-      --card-bg: #ffffff;
-
-      --text-main: #202124;
-
-      --text-sub: #5f6368;
-
-      --border-color: #dadce0;
-
-      --radius: 12px;
-
-    }
 
     body {
 
@@ -839,11 +841,13 @@
               <div style="font-size:14px; line-height:1.4;">${escapeYtHtml(title)}</div>
             `;
 
-            card.addEventListener("click", () => {
-              ytPlayerEl.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`;
-              ytPlayerWrapEl.style.display = "block";
-              ytPlayerWrapEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
-            });
+                  card.addEventListener("click", () => {
+        ytPlayerEl.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`;
+        ytPlayerWrapEl.style.display = "block";
+        ytPlayerWrapEl.scrollIntoView({behavior: "smooth", block: "nearest"});
+        addToHistory(videoId, title); // ★ここで履歴に自動保存！
+      });
+
 
             ytResultsEl.appendChild(card);
           });
@@ -856,6 +860,24 @@
       ytInputEl.addEventListener("keydown", (e) => {
         if (e.key === "Enter") searchYouTube();
       });
+  // ── 視聴履歴とあとで見るの保存機能 ──
+  function getSavedVideos(key) {
+    return JSON.parse(localStorage.getItem(key)) || [];
+  }
+  function saveVideo(key, videoId, title) {
+    let list = getSavedVideos(key);
+    list = list.filter(item => item.id !== videoId);
+    list.unshift({ id: videoId, title: title });
+    if (list.length > 20) list.pop();
+    localStorage.setItem(key, JSON.stringify(list));
+  }
+  function addToHistory(videoId, title) {
+    saveVideo('watch_history', videoId, title);
+  }
+  function addToWatchLater(videoId, title) {
+    saveVideo('watch_later', videoId, title);
+    alert('「あとで見る」に追加しました！');
+  }
 
   </script>
 
