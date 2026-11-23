@@ -355,11 +355,22 @@ body.dark-mode {
 
 
 
-    <!-- アプリ本体 -->
-
+      <!-- アプリ本体 -->
     <div id="app-box" class="hidden">
 
-      
+      <!-- ★ここから追加：スマホのステータスカード -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h2 style="margin-bottom: 0;">📱 スマホのステータス</h2>
+          <button id="refresh-device-btn" type="button" class="secondary" style="padding: 6px 12px; font-size: 12px;">🔄 更新</button>
+        </div>
+        <div id="device-status-body" style="font-size: 14px; line-height: 1.8;">
+          <p style="margin: 4px 0;"><strong>端末名:</strong> <span id="dev-name">読み込み中...</span></p>
+          <p style="margin: 4px 0;"><strong>Wi-Fi状態:</strong> <span id="dev-wifi">読み込み中...</span></p>
+          <p style="margin: 8px 0 0 0; font-size: 12px; color: var(--text-sub);">最終確認: <span id="dev-time">--</span></p>
+        </div>
+      </div>
+      <!-- ★ここまで追加 -->
 
       <!-- メモ作成・一覧カード -->
 
@@ -1034,6 +1045,49 @@ body.dark-mode {
     savedListWrap.style.display = "none";
     activeListKey = null;
   });
+    // ── スマホのステータス取得機能 ──
+    async function loadDeviceStatus() {
+      const nameEl = document.getElementById("dev-name");
+      const wifiEl = document.getElementById("dev-wifi");
+      const timeEl = document.getElementById("dev-time");
+
+      const { data, error } = await sb
+        .from("device_status")
+        .select("*")
+        .order("id", { ascending: false })
+        .limit(1);
+
+      if (error) {
+        nameEl.textContent = "取得エラー: " + error.message;
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const latest = data[0];
+        nameEl.textContent = latest.device_name || "不明";
+        wifiEl.textContent = latest.wifi_status || "不明";
+        timeEl.textContent = new Date().toLocaleTimeString("ja-JP");
+      } else {
+        nameEl.textContent = "データがありません";
+        wifiEl.textContent = "--";
+      }
+    }
+
+    // ログインしたときに自動でステータスも読み込む
+    const originalAuthStateChange = sb.auth.onAuthStateChange;
+    sb.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        // ログイン成功時にステータスを読み込む
+        setTimeout(loadDeviceStatus, 500);
+      }
+    });
+
+    // 🔄 更新ボタンのクリックイベント
+    document.addEventListener("click", (e) => {
+      if (e.target && e.target.id === "refresh-device-btn") {
+        loadDeviceStatus();
+      }
+    });
 
   </script>
 
