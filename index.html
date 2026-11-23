@@ -371,6 +371,38 @@
         <div id="files-list" style="margin-top: 14px;"></div>
 
       </div>
+        <!-- YouTube検索＆再生カード -->
+        <div class="card">
+          <h2>YouTube 検索</h2>
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <input
+              id="yt-query"
+              type="text"
+              placeholder="キーワードを入力..."
+              style="flex: 1; margin: 0;"
+            />
+            <button
+              id="yt-search-btn"
+              type="button"
+              style="margin: 0; white-space: nowrap;"
+            >
+              検索
+            </button>
+          </div>
+
+          <div id="yt-player-wrap" style="display: none; aspect-ratio: 16 / 9; margin-bottom: 14px;">
+            <iframe
+              id="yt-player"
+              width="100%"
+              height="100%"
+              style="border: 0; border-radius: 10px;"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+            ></iframe>
+          </div>
+
+          <div id="yt-results" style="display: grid; gap: 10px;"></div>
+        </div>
 
 
 
@@ -749,6 +781,81 @@
       }
 
     });
+      const YT_API_KEY = "AIzaSyDJtY2Bx-lGDt5h_JcQZ4WyI-4i2KseCtQ";
+
+      const ytInputEl = document.getElementById("yt-query");
+      const ytBtnEl = document.getElementById("yt-search-btn");
+      const ytResultsEl = document.getElementById("yt-results");
+      const ytPlayerWrapEl = document.getElementById("yt-player-wrap");
+      const ytPlayerEl = document.getElementById("yt-player");
+
+      function escapeYtHtml(str) {
+        return str
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+      }
+
+      async function searchYouTube() {
+        const q = ytInputEl.value.trim();
+        if (!q) return;
+
+        ytResultsEl.innerHTML = "<p>検索中...</p>";
+
+        const url = new URL("https://www.googleapis.com/youtube/v3/search");
+        url.searchParams.set("part", "snippet");
+        url.searchParams.set("type", "video");
+        url.searchParams.set("maxResults", "6");
+        url.searchParams.set("q", q);
+        url.searchParams.set("key", YT_API_KEY);
+
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+
+          if (!res.ok) {
+            ytResultsEl.innerHTML = `<p>検索エラー: ${escapeYtHtml(data.error?.message || "取得できませんでした")}</p>`;
+            return;
+          }
+
+          if (!data.items || data.items.length === 0) {
+            ytResultsEl.innerHTML = "<p>動画が見つかりませんでした。</p>";
+            return;
+          }
+
+          ytResultsEl.innerHTML = "";
+          data.items.forEach((item) => {
+            const videoId = item.id?.videoId;
+            const title = item.snippet?.title || "タイトルなし";
+            const thumb = item.snippet?.thumbnails?.medium?.url || "";
+            if (!videoId) return;
+
+            const card = document.createElement("div");
+            card.style.cssText =
+              "display:flex; gap:10px; align-items:center; padding:8px; border:1px solid #e5e7eb; border-radius:8px; cursor:pointer;";
+            card.innerHTML = `
+              <img src="${thumb}" alt="" style="width:120px; aspect-ratio:16/9; object-fit:cover; border-radius:6px; flex-shrink:0;" />
+              <div style="font-size:14px; line-height:1.4;">${escapeYtHtml(title)}</div>
+            `;
+
+            card.addEventListener("click", () => {
+              ytPlayerEl.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+              ytPlayerWrapEl.style.display = "block";
+              ytPlayerWrapEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            });
+
+            ytResultsEl.appendChild(card);
+          });
+        } catch (err) {
+          ytResultsEl.innerHTML = "<p>通信エラーが発生しました。</p>";
+        }
+      }
+
+      ytBtnEl.addEventListener("click", searchYouTube);
+      ytInputEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") searchYouTube();
+      });
 
   </script>
 
