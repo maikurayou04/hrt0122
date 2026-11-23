@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>マイダッシュボード</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+
+    :root {
+
+      --primary: #1967d2;
+
+      --primary-hover: #1557b0;
+
+      --bg-color: #f8f9fa;
+
+      --card-bg: #ffffff;
+
+      --text-main: #202124;
+
+      --text-sub: #5f6368;
+
+      --border-color: #dadce0;
+
+      --radius: 12px;
+
+    }
+
+    body {
+
+      font-family: 'Google Sans', Roboto, Arial, sans-serif;
+
+      background-color: var(--bg-color);
+
+      color: var(--text-main);
+
+      max-width: 800px;
+
+      margin: 0 auto;
+
+      padding: 0 0 40px 0;
+
+      box-sizing: border-box;
+
+    }
+
+    /* ヘッダー風のバー */
+
+    header {
+
+      background: var(--card-bg);
+
+      border-bottom: 1px solid var(--border-color);
+
+      padding: 16px 20px;
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+      position: sticky;
+
+      top: 0;
+
+      z-index: 10;
+
+    }
+
+    header h1 {
+
+      font-size: 18px;
+
+      margin: 0;
+
+      color: var(--primary);
+
+      font-weight: 500;
+
+    }
+
+    .user-area {
+
+      font-size: 13px;
+
+      color: var(--text-sub);
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 10px;
+
+    }
+
+    .container {
+
+      padding: 16px;
+
+    }
+
+    /* カードデザイン */
+
+    .card {
+
+      background: var(--card-bg);
+
+      border: 1px solid var(--border-color);
+
+      border-radius: var(--radius);
+
+      padding: 20px;
+
+      margin-bottom: 20px;
+
+      box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+
+    }
+
+    .card h2 {
+
+      font-size: 16px;
+
+      margin-top: 0;
+
+      margin-bottom: 14px;
+
+      color: var(--text-main);
+
+      border-bottom: 2px solid var(--primary);
+
+      padding-bottom: 6px;
+
+      display: inline-block;
+
+    }
+
+    input[type="text"], input[type="email"], input[type="password"], textarea, input[type="file"] {
+
+      font-size: 15px;
+
+      padding: 12px;
+
+      border-radius: 8px;
+
+      border: 1px solid var(--border-color);
+
+      width: 100%;
+
+      box-sizing: border-box;
+
+      margin-bottom: 12px;
+
+      background: #fff;
+
+      outline: none;
+
+      transition: border 0.2s;
+
+    }
+
+    input:focus, textarea:focus {
+
+      border-color: var(--primary);
+
+      box-shadow: 0 0 0 2px rgba(26,115,232,0.2);
+
+    }
+
+    button {
+
+      background: var(--primary);
+
+      color: #fff;
+
+      border: none;
+
+      cursor: pointer;
+
+      font-weight: 500;
+
+      font-size: 14px;
+
+      padding: 10px 18px;
+
+      border-radius: 8px;
+
+      transition: background 0.2s;
+
+    }
+
+    button:hover {
+
+      background: var(--primary-hover);
+
+    }
+
+    button.secondary {
+
+      background: #f1f3f4;
+
+      color: var(--text-main);
+
+      border: 1px solid var(--border-color);
+
+    }
+
+    button.secondary:hover {
+
+      background: #e8eaed;
+
+    }
+
+    button.danger {
+
+      background: #d93025;
+
+    }
+
+    button.danger:hover {
+
+      background: #b31412;
+
+    }
+
+    .row {
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: flex-start;
+
+      gap: 12px;
+
+      padding: 12px 0;
+
+      border-bottom: 1px solid #f1f3f4;
+
+    }
+
+    .row:last-child {
+
+      border-bottom: none;
+
+    }
+
+    .hidden {
+
+      display: none;
+
+    }
+
+    .status {
+
+      background: #e8f0fe;
+
+      color: var(--primary);
+
+      padding: 10px 14px;
+
+      border-radius: 8px;
+
+      font-size: 14px;
+
+      margin-bottom: 16px;
+
+    }
+
+    .btn-group {
+
+      display: flex;
+
+      gap: 6px;
+
+      flex-wrap: wrap;
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+
+
+  <!-- Classroom風ヘッダー -->
+
+  <header>
+
+    <h1>📚 マイダッシュボード</h1>
+
+    <div id="header-user" class="hidden user-area">
+
+      <span id="user-email"></span>
+
+      <button id="logout-btn" class="secondary" style="padding:6px 12px;font-size:12px;margin:0;">ログアウト</button>
+
+    </div>
+
+  </header>
+
+
+
+  <div class="container">
+
+    <div id="status" class="status hidden"></div>
+
+
+
+    <!-- ログイン画面 -->
+
+    <div id="auth-box" class="card" style="max-width: 400px; margin: 40px auto;">
+
+      <h2>ログイン</h2>
+
+      <input id="email" type="email" placeholder="メールアドレス" autocomplete="username" />
+
+      <input id="password" type="password" placeholder="パスワード" autocomplete="current-password" />
+
+      <button id="login-btn" style="width:100%;">ログイン</button>
+
+    </div>
+
+
+
+    <!-- アプリ本体 -->
+
+    <div id="app-box" class="hidden">
+
+      
+
+      <!-- メモ作成・一覧カード -->
+
+      <div class="card">
+
+        <h2>メモ</h2>
+
+        <input id="note-title" type="text" placeholder="タイトル" />
+
+        <textarea id="note-content" rows="3" placeholder="メモの内容を入力..."></textarea>
+
+        <button id="add-note-btn">メモを保存</button>
+
+        <div id="notes-list" style="margin-top: 14px;"></div>
+
+      </div>
+
+
+
+      <!-- ファイル管理カード -->
+
+      <div class="card">
+
+        <h2>ファイルストレージ</h2>
+
+        <input id="file-input" type="file" />
+
+        <button id="upload-btn">アップロード</button>
+
+        <div id="files-list" style="margin-top: 14px;"></div>
+
+      </div>
+
+
+
+    </div>
+
+  </div>
+
+
+
+  <script>
+
+    const SUPABASE_URL = "https://kovmdyvddmtqiixrjjux.supabase.co";
+
+    const SUPABASE_KEY = "sb_publishable_mkn7AP0QE1XIhmALoVLaqA_Vtg-XZ55";
+
+    const BUCKET = "user-files";
+
+
+
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+
+      auth: { persistSession: true, autoRefreshToken: true }
+
+    });
+
+
+
+    const statusEl = document.getElementById("status");
+
+    const authBox = document.getElementById("auth-box");
+
+    const appBox = document.getElementById("app-box");
+
+    const headerUser = document.getElementById("header-user");
+
+    const userEmail = document.getElementById("user-email");
+
+    const notesList = document.getElementById("notes-list");
+
+    const filesList = document.getElementById("files-list");
+
+
+
+    let currentUser = null;
+
+
+
+    function setStatus(msg) {
+
+      if (!msg) {
+
+        statusEl.classList.add("hidden");
+
+        statusEl.textContent = "";
+
+      } else {
+
+        statusEl.textContent = msg;
+
+        statusEl.classList.remove("hidden");
+
+      }
+
+    }
+
+
+
+    document.getElementById("login-btn").addEventListener("click", async () => {
+
+      const email = document.getElementById("email").value.trim();
+
+      const password = document.getElementById("password").value;
+
+      setStatus("ログイン中...");
+
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+
+      if (error) setStatus("ログイン失敗: " + error.message);
+
+      else setStatus("");
+
+    });
+
+
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+
+      await sb.auth.signOut();
+
+    });
+
+
+
+    document.getElementById("add-note-btn").addEventListener("click", async () => {
+
+      if (!currentUser) return;
+
+      const title = document.getElementById("note-title").value.trim() || "無題のメモ";
+
+      const content = document.getElementById("note-content").value;
+
+      const { error } = await sb.from("notes").insert({
+
+        user_id: currentUser.id,
+
+        title,
+
+        content
+
+      });
+
+      if (error) return setStatus("メモ保存エラー: " + error.message);
+
+      document.getElementById("note-title").value = "";
+
+      document.getElementById("note-content").value = "";
+
+      setStatus("メモを保存しました");
+
+      await loadNotes();
+
+    });
+
+
+
+    async function loadNotes() {
+
+      const { data, error } = await sb
+
+        .from("notes")
+
+        .select("*")
+
+        .order("updated_at", { ascending: false });
+
+      if (error) return setStatus("メモ読込エラー: " + error.message);
+
+
+
+      notesList.innerHTML = "";
+
+      if (!data || data.length === 0) {
+
+        notesList.innerHTML = '<div style="color:#5f6368;font-size:14px;padding:8px 0;">メモはまだありません</div>';
+
+        return;
+
+      }
+
+
+
+      data.forEach((n) => {
+
+        const div = document.createElement("div");
+
+        div.className = "row";
+
+        div.innerHTML = `
+
+          <div style="flex:1; word-break: break-all;">
+
+            <strong style="font-size:15px; color:#202124;">${escapeHtml(n.title)}</strong>
+
+            <div style="white-space:pre-wrap; color:#5f6368; font-size:14px; margin-top:4px;">${escapeHtml(n.content)}</div>
+
+          </div>
+
+          <button class="danger btn-del" style="padding:6px 10px;font-size:12px;">削除</button>
+
+        `;
+
+        div.querySelector(".btn-del").addEventListener("click", async () => {
+
+          const { error: delErr } = await sb.from("notes").delete().eq("id", n.id);
+
+          if (delErr) setStatus("削除エラー: " + delErr.message);
+
+          else {
+
+            setStatus("メモを削除しました");
+
+            await loadNotes();
+
+          }
+
+        });
+
+        notesList.appendChild(div);
+
+      });
+
+    }
+
+
+
+    document.getElementById("upload-btn").addEventListener("click", async () => {
+
+      if (!currentUser) return;
+
+      const file = document.getElementById("file-input").files[0];
+
+      if (!file) return setStatus("ファイルを選んでください");
+
+      const path = `${currentUser.id}/${Date.now()}_${file.name}`;
+
+      setStatus("アップロード中...");
+
+      const { error } = await sb.storage.from(BUCKET).upload(path, file);
+
+      if (error) return setStatus("アップロードエラー: " + error.message);
+
+      document.getElementById("file-input").value = "";
+
+      setStatus("アップロード完了しました");
+
+      await loadFiles();
+
+    });
+
+
+
+    async function loadFiles() {
+
+      if (!currentUser) return;
+
+      const { data, error } = await sb.storage.from(BUCKET).list(currentUser.id, {
+
+        sortBy: { column: "created_at", order: "desc" }
+
+      });
+
+      if (error) return setStatus("ファイル一覧エラー: " + error.message);
+
+
+
+      filesList.innerHTML = "";
+
+      const validFiles = (data || []).filter((f) => f.name !== ".emptyFolderPlaceholder");
+
+      if (validFiles.length === 0) {
+
+        filesList.innerHTML = '<div style="color:#5f6368;font-size:14px;padding:8px 0;">ファイルはまだありません</div>';
+
+        return;
+
+      }
+
+
+
+      validFiles.forEach((f) => {
+
+        const fullPath = `${currentUser.id}/${f.name}`;
+
+        const div = document.createElement("div");
+
+        div.className = "row";
+
+        div.innerHTML = `
+
+          <span style="word-break: break-all; flex:1; font-size:14px; color:#202124;">${escapeHtml(f.name)}</span>
+
+          <div class="btn-group">
+
+            <button class="secondary btn-open" style="padding:6px 10px;font-size:12px;">開く</button>
+
+            <button class="secondary btn-download" style="padding:6px 10px;font-size:12px;">DL</button>
+
+            <button class="danger btn-del" style="padding:6px 10px;font-size:12px;">削除</button>
+
+          </div>
+
+        `;
+
+        const openBtn = div.querySelector(".btn-open");
+
+        const downloadBtn = div.querySelector(".btn-download");
+
+        const delBtn = div.querySelector(".btn-del");
+
+
+
+        openBtn.addEventListener("click", async () => {
+
+          const { data: signed, error: urlErr } = await sb.storage
+
+            .from(BUCKET)
+
+            .createSignedUrl(fullPath, 60);
+
+          if (urlErr) setStatus("URL発行エラー: " + urlErr.message);
+
+          else window.open(signed.signedUrl, "_blank");
+
+        });
+
+
+
+        downloadBtn.addEventListener("click", async () => {
+
+          const { data: signed, error: urlErr } = await sb.storage
+
+            .from(BUCKET)
+
+            .createSignedUrl(fullPath, 60, { download: f.name });
+
+          if (urlErr) setStatus("URL発行エラー: " + urlErr.message);
+
+          else window.open(signed.signedUrl, "_blank");
+
+        });
+
+
+
+        delBtn.addEventListener("click", async () => {
+
+          const { error: delErr } = await sb.storage.from(BUCKET).remove([fullPath]);
+
+          if (delErr) setStatus("削除エラー: " + delErr.message);
+
+          else {
+
+            setStatus("ファイルを削除しました");
+
+            await loadFiles();
+
+          }
+
+        });
+
+        filesList.appendChild(div);
+
+      });
+
+    }
+
+
+
+    function escapeHtml(str) {
+
+      return String(str).replace(/[&<>"']/g, (m) => ({
+
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+
+      }[m]));
+
+    }
+
+
+
+    sb.auth.onAuthStateChange(async (_event, session) => {
+
+      currentUser = session?.user || null;
+
+      if (currentUser) {
+
+        authBox.classList.add("hidden");
+
+        appBox.classList.remove("hidden");
+
+        headerUser.classList.remove("hidden");
+
+        userEmail.textContent = currentUser.email;
+
+        await Promise.all([loadNotes(), loadFiles()]);
+
+      } else {
+
+        authBox.classList.remove("hidden");
+
+        appBox.classList.add("hidden");
+
+        headerUser.classList.add("hidden");
+
+        userEmail.textContent = "";
+
+      }
+
+    });
+
+  </script>
+
+</body>
+
+</html>
+
+
+
