@@ -288,6 +288,25 @@ body.dark-mode {
 
     }
 
+    /* ダークモード時の視認性調整（追加分） */
+    body.dark-mode input[type="text"],
+    body.dark-mode input[type="email"],
+    body.dark-mode input[type="password"],
+    body.dark-mode textarea,
+    body.dark-mode input[type="file"] {
+      background: #2a2a2a;
+      color: var(--text-main);
+    }
+
+    body.dark-mode button.secondary {
+      background: #2c2c2c;
+      color: var(--text-main);
+    }
+
+    body.dark-mode button.secondary:hover {
+      background: #3a3a3a;
+    }
+
   </style>
 
 </head>
@@ -387,9 +406,12 @@ body.dark-mode {
 
       <!-- 履歴やあとで見るの一覧が出る場所 -->
       <div id="saved-list-wrap" style="display: none; margin-bottom: 14px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px;">
           <strong id="saved-list-title" style="font-size: 14px;">一覧</strong>
-          <button id="closeSavedList" type="button" class="secondary" style="padding: 4px 8px; font-size: 12px;">✕ 閉じる</button>
+          <div style="display: flex; gap: 6px;">
+            <button id="clearSavedListBtn" type="button" class="danger" style="padding: 4px 8px; font-size: 12px;">一括削除</button>
+            <button id="closeSavedList" type="button" class="secondary" style="padding: 4px 8px; font-size: 12px;">✕ 閉じる</button>
+          </div>
         </div>
         <div id="saved-list" style="display: grid; gap: 8px;"></div>
       </div>
@@ -855,18 +877,24 @@ body.dark-mode {
 
             const card = document.createElement("div");
             card.style.cssText =
-              "display:flex; gap:10px; align-items:center; padding:8px; border:1px solid #e5e7eb; border-radius:8px; cursor:pointer;";
+              "display:flex; gap:10px; align-items:center; padding:8px; border:1px solid var(--border-color); border-radius:8px; cursor:pointer;";
             card.innerHTML = `
               <img src="${thumb}" alt="" style="width:120px; aspect-ratio:16/9; object-fit:cover; border-radius:6px; flex-shrink:0;" />
-              <div style="font-size:14px; line-height:1.4;">${escapeYtHtml(title)}</div>
+              <div style="flex:1; font-size:14px; line-height:1.4;">${escapeYtHtml(title)}</div>
+              <button type="button" class="secondary btn-watch-later" style="padding:6px 10px; font-size:12px; flex-shrink:0;">📌 あとで見る</button>
             `;
 
-                  card.addEventListener("click", () => {
-        ytPlayerEl.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`;
-        ytPlayerWrapEl.style.display = "block";
-        ytPlayerWrapEl.scrollIntoView({behavior: "smooth", block: "nearest"});
-        addToHistory(videoId, title); // ★ここで履歴に自動保存！
-      });
+            card.querySelector(".btn-watch-later").addEventListener("click", (e) => {
+              e.stopPropagation();
+              addToWatchLater(videoId, title);
+            });
+
+            card.addEventListener("click", () => {
+              ytPlayerEl.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`;
+              ytPlayerWrapEl.style.display = "block";
+              ytPlayerWrapEl.scrollIntoView({behavior: "smooth", block: "nearest"});
+              addToHistory(videoId, title); // ★ここで履歴に自動保存！
+            });
 
 
             ytResultsEl.appendChild(card);
@@ -890,6 +918,7 @@ body.dark-mode {
     list.unshift({ id: videoId, title: title });
     if (list.length > 20) list.pop();
     localStorage.setItem(key, JSON.stringify(list));
+    if (activeListKey === key) renderSavedList(key);
   }
   function addToHistory(videoId, title) {
     saveVideo('watch_history', videoId, title);
@@ -899,10 +928,115 @@ body.dark-mode {
     alert('「あとで見る」に追加しました！');
   }
 
+ // ── ダークモード切り替え機能 ──
+  const themeToggleBtn = document.getElementById("themeToggle");
+  function applyTheme(isDark) {
+    document.body.classList.toggle("dark-mode", isDark);
+    themeToggleBtn.textContent = isDark ? "☀️ ライトモード" : "🌙 ダークモード";
+  }
+  applyTheme(localStorage.getItem("dashboard_dark_mode") === "true");
+
+  themeToggleBtn.addEventListener("click", () => {
+    const nextDark = !document.body.classList.contains("dark-mode");
+    localStorage.setItem("dashboard_dark_mode", String(nextDark));
+    applyTheme(nextDark);
+  });
+
+  // ── 履歴・あとで見るの一覧表示・個別削除・一括削除機能 ──
+  const savedListWrap = document.getElementById("saved-list-wrap");
+  const savedListTitle = document.getElementById("saved-list-title");
+  const savedListEl = document.getElementById("saved-list");
+  const showHistoryBtn = document.getElementById("showHistoryBtn");
+  const showWatchLaterBtn = document.getElementById("showWatchLaterBtn");
+  const clearSavedListBtn = document.getElementById("clearSavedListBtn");
+  const closeSavedListBtn = document.getElementById("closeSavedList");
+
+  let activeListKey = null;
+
+  function renderSavedList(key) {
+    activeListKey = key;
+    savedListTitle.textContent = key === "watch_history" ? "🕒 視聴履歴" : "📌 あとで見る";
+    savedListWrap.style.display = "block";
+
+    const list = getSavedVideos(key);
+    savedListEl.innerHTML = "";
+
+    if (list.length === 0) {
+      clearSavedListBtn.style.display = "none";
+      savedListEl.innerHTML = `<div style="font-size:13px; color:var(--text-sub); padding:4px 0;">保存されている動画はありません</div>`;
+      return;
+    }
+
+    clearSavedListBtn.style.display = "inline-block";
+
+    list.forEach((item) => {
+      const row = document.createElement("div");
+      row.style.cssText =
+        "display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 8px; border:1px solid var(--border-color); border-radius:6px;";
+
+      const titleSpan = document.createElement("span");
+      titleSpan.textContent = item.title;
+      titleSpan.style.cssText =
+        "flex:1; font-size:13px; cursor:pointer; word-break:break-all;";
+      titleSpan.addEventListener("click", () => {
+        ytPlayerEl.src = `https://www.youtube-nocookie.com/embed/${item.id}?autoplay=1`;
+        ytPlayerWrapEl.style.display = "block";
+        ytPlayerWrapEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        if (key !== "watch_history") {
+          addToHistory(item.id, item.title);
+        }
+      });
+
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "danger";
+      delBtn.textContent = "削除";
+      delBtn.style.cssText = "padding:4px 8px; font-size:12px; flex-shrink:0;";
+      delBtn.addEventListener("click", () => {
+        const updated = getSavedVideos(key).filter((v) => v.id !== item.id);
+        localStorage.setItem(key, JSON.stringify(updated));
+        renderSavedList(key);
+      });
+
+      row.appendChild(titleSpan);
+      row.appendChild(delBtn);
+      savedListEl.appendChild(row);
+    });
+  }
+
+  showHistoryBtn.addEventListener("click", () => {
+    if (savedListWrap.style.display === "block" && activeListKey === "watch_history") {
+      savedListWrap.style.display = "none";
+      activeListKey = null;
+    } else {
+      renderSavedList("watch_history");
+    }
+  });
+
+  showWatchLaterBtn.addEventListener("click", () => {
+    if (savedListWrap.style.display === "block" && activeListKey === "watch_later") {
+      savedListWrap.style.display = "none";
+      activeListKey = null;
+    } else {
+      renderSavedList("watch_later");
+    }
+  });
+
+  clearSavedListBtn.addEventListener("click", () => {
+    if (!activeListKey) return;
+    const label = activeListKey === "watch_history" ? "視聴履歴" : "あとで見る";
+    if (!confirm(`${label}をすべて削除しますか？`)) return;
+    localStorage.removeItem(activeListKey);
+    renderSavedList(activeListKey);
+  });
+
+  closeSavedListBtn.addEventListener("click", () => {
+    savedListWrap.style.display = "none";
+    activeListKey = null;
+  });
+
   </script>
 
 </body>
 
 </html>
-
-
