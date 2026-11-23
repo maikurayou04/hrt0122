@@ -358,7 +358,7 @@ body.dark-mode {
       <!-- アプリ本体 -->
     <div id="app-box" class="hidden">
 
-            <!-- スマホのステータスカード -->
+         <!-- スマホのステータスカード -->
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
           <h2 style="margin-bottom: 0;">📱 スマホのステータス</h2>
@@ -367,6 +367,8 @@ body.dark-mode {
         <div id="device-status-body" style="font-size: 14px; line-height: 1.8;">
           <p style="margin: 4px 0;"><strong>端末名:</strong> <span id="dev-name">読み込み中...</span></p>
           <p style="margin: 4px 0;"><strong>Wi-Fi:</strong> <span id="dev-wifi">--</span></p>
+          <!-- ▼ ここにバッテリーを追加 ▼ -->
+          <p style="margin: 4px 0;"><strong>バッテリー:</strong> <span id="dev-battery">--</span>%</p>
           <p style="margin: 4px 0;"><strong>音量(着信):</strong> <span id="dev-ringer">--</span></p>
           <p style="margin: 4px 0;"><strong>空き容量:</strong> <span id="dev-storage">--</span></p>
           <p style="margin: 4px 0;"><strong>直近の通知:</strong> <span id="dev-notif">--</span></p>
@@ -1049,9 +1051,10 @@ body.dark-mode {
     activeListKey = null;
   });
         // ── スマホのステータス取得機能 ──
-    async function loadDeviceStatus() {
+        async function loadDeviceStatus() {
       const nameEl = document.getElementById("dev-name");
       const wifiEl = document.getElementById("dev-wifi");
+      const batteryEl = document.getElementById("dev-battery"); // ←追加
       const ringerEl = document.getElementById("dev-ringer");
       const storageEl = document.getElementById("dev-storage");
       const notifEl = document.getElementById("dev-notif");
@@ -1072,6 +1075,12 @@ body.dark-mode {
         const latest = data[0];
         if (nameEl) nameEl.textContent = latest.device_name || "不明";
         if (wifiEl) wifiEl.textContent = latest.wifi_status || latest.wifi_ssid || "未接続";
+        
+        // ▼ バッテリー残量を反映 ▼
+        if (batteryEl) {
+          batteryEl.textContent = latest.battery_level ?? "--";
+        }
+
         if (ringerEl) ringerEl.textContent = latest.volume_ringer ?? "--";
         if (storageEl) storageEl.textContent = latest.free_internal_storage ? `${latest.free_internal_storage} GB` : "--";
         if (notifEl) notifEl.textContent = latest.last_notification || "なし";
